@@ -1,0 +1,77 @@
+{
+  "description": "Periodically reads stream data and writes it to a TimePartitionedFileSet",
+  "artifact": {
+    "name": "cdap-data-pipeline",
+    "scope": "system",
+    "version": "4.0.1"
+  },
+  "config": {
+    "schedule": "*/10 * * * *",
+    "engine": "mapreduce",
+    "stages": [
+      {
+        "name": "tradeStream",
+        "plugin": {
+          "name": "Stream",
+          "type": "batchsource",
+          "properties": {
+            "name": "trades",
+            "duration": "10m",
+            "format": "csv",
+            "schema": "{
+              \"type\":\"record\",
+              \"name\":\"purchase\",
+              \"fields\":[
+                {\"name\":\"ticker\",\"type\":\"string\"},
+                {\"name\":\"price\",\"type\":\"double\"},
+                {\"name\":\"trades\",\"type\":\"int\"}
+              ]
+            }",
+            "format.setting.delimiter":","
+          }
+        }
+      },
+      {
+        "name": "dropHeadersTransform",
+        "plugin": {
+          "name": "Projection",
+          "type": "transform",
+          "properties": {
+            "drop": "headers"
+          }
+        }
+      },
+      {
+        "name": "tpfsAvroSink",
+        "plugin": {
+          "name": "TPFSAvro",
+          "type": "batchsink",
+          "properties": {
+            "name": "trades_converted",
+            "schema": "{
+              \"type\":\"record\",
+              \"name\":\"purchase\",
+              \"fields\":[
+                {\"name\":\"ts\",\"type\":\"long\"},
+                {\"name\":\"ticker\",\"type\":\"string\"},
+                {\"name\":\"price\",\"type\":\"double\"},
+                {\"name\":\"trades\",\"type\":\"int\"}
+              ]
+            }",
+            "basePath": "trades_converted"
+          }
+        }
+      }
+    ],
+    "connections": [
+      {
+        "from": "tradeStream",
+        "to": "dropHeadersTransform"
+      },
+      {
+        "from": "dropHeadersTransform",
+        "to": "tpfsAvroSink"
+      }
+    ]
+  }
+}

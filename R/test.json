@@ -1,0 +1,32 @@
+{
+    "name": "PythonEvaluator",
+    "type": "transform",
+    "properties": {
+        "script": "def transform(record, emitter, context):
+                 if (record['subtotal'] < 0):
+                   emitter.emitError({
+                     'errorCode': 10,
+                     'errorMsg': 'subtotal is less than 0',
+                     'invalidRecord': record,
+                   })
+                 else:
+                   tax = record['subtotal'] * 0.0975
+                   if (tax > 1000.0):
+                     context.getMetrics().count('tax.above.1000', 1)
+                   emitter.emit({
+                     'subtotal': record['subtotal'],
+                     'tax': tax,
+                     'total': record['subtotal'] + tax,
+                   })
+              ",
+        "schema": "{
+            \"type\":\"record\",
+            \"name\":\"expanded\",
+            \"fields\":[
+                {\"name\":\"subtotal\",\"type\":\"double\"},
+                {\"name\":\"tax\",\"type\":\"double\"},
+                {\"name\":\"total\",\"type\":\"double\"}
+            ]
+        }"
+    }
+}
